@@ -15,7 +15,7 @@ const device = {
     height: window.innerHeight,
     pixelRatio: window.devicePixelRatio,
 }
-const text = "ankit"
+const text = "hehe"
 
 export class Sketch {
     canvas: HTMLCanvasElement
@@ -72,10 +72,7 @@ export class Sketch {
             device.width * device.pixelRatio,
             device.height * device.pixelRatio
         )
-        this.renderBufferB = new WebGLRenderTarget(
-            device.width * device.pixelRatio,
-            device.height * device.pixelRatio
-        )
+        this.renderBufferB = this.renderBufferA.clone()
 
         this.controls = new OrbitControls(this.camera, canvas)
         this.gui = new GUI({
@@ -92,11 +89,12 @@ export class Sketch {
         const planeSize = Math.max(device.width, device.height)
         this.geometry = new THREE.PlaneGeometry(planeSize, planeSize)
         const textCanvas = document.createElement('canvas')
+        // const textCanvas = this.canvas
         const context = textCanvas.getContext('2d')
 
         if (context) {
             const textureSize = 2048
-            const fontSize = 100
+            const fontSize = 260
 
             textCanvas.width = textureSize
             textCanvas.height = textureSize
@@ -127,7 +125,9 @@ export class Sketch {
         this.postFXGeometry = new THREE.PlaneGeometry(device.width, device.height)
         this.postFXMaterial = new THREE.ShaderMaterial({
             uniforms: {
-                sampler: {value: null}
+                sampler: {value: null},
+                time: {value: 0},
+                mousePos: {value: new THREE.Vector2(0, 0)}
             },
             vertexShader: vert,
             fragmentShader: frag
@@ -141,20 +141,33 @@ export class Sketch {
         this.time += 0.005
 
         this.renderer.setRenderTarget(this.renderBufferA)
+        this.renderer.render(this.postFXScene, this.camera)
         this.renderer.render(this.scene, this.camera)
         this.renderer.setRenderTarget(null);
+
         (this.postFXMesh!.material as THREE.ShaderMaterial).uniforms.sampler.value = this.renderBufferA.texture
         this.renderer.render(this.postFXScene, this.camera)
+
+        const temp = this.renderBufferA
+        this.renderBufferA = this.renderBufferB
+        this.renderBufferB = temp
 
         this.controls.update()
         this.stats?.end()
         requestAnimationFrame(this.render.bind(this))
     }
 
+    onMouseMove(e: MouseEvent): void {
+        const x = (e.pageX / innerWidth) * 2 - 1
+        const y = (1 - e.pageY / innerHeight) * 2 - 1;
+        (this.postFXMesh?.material as THREE.ShaderMaterial).uniforms.mousePos.value.set(x, y)
+    }
+
     init(): void {
         this.addGeometry()
         this.resize()
         this.render()
+        document.addEventListener('mousemove', this.onMouseMove.bind(this))
     }
 
     initStats(): void {
@@ -190,7 +203,7 @@ export class Sketch {
         device.width = window.innerWidth
         device.height = window.innerHeight
 
-        this.camera.aspect = device.width / device.height
+        // this.camera.aspect = device.width / device.height
         this.camera.updateProjectionMatrix()
 
         this.renderer.setSize(device.width, device.height)
