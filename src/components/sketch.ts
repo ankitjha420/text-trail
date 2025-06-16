@@ -7,7 +7,7 @@ import vert from '../shaders/vert.glsl?raw'
 import frag from '../shaders/frag.glsl?raw'
 import { settings } from './gui'
 import gsap from 'gsap'
-import {WebGLRenderTarget} from "three";
+import { WebGLRenderTarget } from 'three'
 
 // constants ->
 const device = {
@@ -15,7 +15,7 @@ const device = {
     height: window.innerHeight,
     pixelRatio: window.devicePixelRatio,
 }
-const text = "hehe"
+const text = 'happy holi'
 
 export class Sketch {
     canvas: HTMLCanvasElement
@@ -38,6 +38,8 @@ export class Sketch {
     postFXGeometry?: THREE.PlaneGeometry
     postFXMaterial?: THREE.ShaderMaterial
     postFXMesh?: THREE.Mesh
+    context: CanvasRenderingContext2D | null
+    textCanvas: HTMLCanvasElement
 
     constructor(canvas: HTMLCanvasElement) {
         this.time = 0
@@ -79,7 +81,11 @@ export class Sketch {
             width: 340,
             title: 'Settings',
         })
+        this.gui.hide()
         this.clock = new THREE.Clock()
+
+        this.textCanvas = document.createElement('canvas')
+        this.context = this.textCanvas.getContext('2d')
 
         this.initStats()
         this.init()
@@ -88,31 +94,30 @@ export class Sketch {
     addGeometry(): void {
         const planeSize = Math.max(device.width, device.height)
         this.geometry = new THREE.PlaneGeometry(planeSize, planeSize)
-        const textCanvas = document.createElement('canvas')
-        // const textCanvas = this.canvas
-        const context = textCanvas.getContext('2d')
 
-        if (context) {
+        if (this.context) {
             const textureSize = 2048
             const fontSize = 260
 
-            textCanvas.width = textureSize
-            textCanvas.height = textureSize
+            this.textCanvas.width = textureSize
+            this.textCanvas.height = textureSize
 
-            context.font = `bold ${fontSize}px Arial`
-            context.fillStyle = 'white'
-            context.textAlign = 'center'
-            context.textBaseline = 'middle'
-            context.fillText(text, textCanvas.width / 2, textCanvas.height / 2)
+            this.context.font = `bold ${fontSize}px Arial`
+            this.context.fillStyle = 'white'
+            this.context.textAlign = 'center'
+            this.context.textBaseline = 'middle'
+            this.context.fillText(text, this.textCanvas.width / 2, this.textCanvas.height / 2)
         }
 
-        const textTexture = new THREE.CanvasTexture(textCanvas);
+        const textTexture = new THREE.CanvasTexture(this.textCanvas)
         textTexture.needsUpdate = true
+
         this.material = new THREE.MeshBasicMaterial({
             map: textTexture,
             transparent: true,
             side: THREE.DoubleSide
         })
+
         this.mesh = new THREE.Mesh(this.geometry, this.material)
         this.scene.add(this.mesh)
 
@@ -138,14 +143,30 @@ export class Sketch {
 
     render(): void {
         this.stats?.begin()
-        this.time += 0.005
+        this.time += 0.001
+
+        if (this.context) {
+            this.context.clearRect(0, 0, this.textCanvas.width, this.textCanvas.height)
+
+            const hue = (this.time * 100) % 360 // Adjust speed by changing multiplier
+            this.context.fillStyle = `hsl(${hue}, 100%, 50%)`
+
+            this.context.textAlign = 'center'
+            this.context.textBaseline = 'middle'
+            this.context.fillText(text, this.textCanvas.width / 2, this.textCanvas.height / 2)
+
+            const textTexture = (this.material! as THREE.MeshBasicMaterial).map as THREE.CanvasTexture
+            if (textTexture) {
+                textTexture.needsUpdate = true
+            }
+        }
 
         this.renderer.setRenderTarget(this.renderBufferA)
         this.renderer.render(this.postFXScene, this.camera)
         this.renderer.render(this.scene, this.camera)
-        this.renderer.setRenderTarget(null);
+        this.renderer.setRenderTarget(null)
 
-        (this.postFXMesh!.material as THREE.ShaderMaterial).uniforms.sampler.value = this.renderBufferA.texture
+        ;(this.postFXMesh!.material as THREE.ShaderMaterial).uniforms.sampler.value = this.renderBufferA.texture
         this.renderer.render(this.postFXScene, this.camera)
 
         const temp = this.renderBufferA

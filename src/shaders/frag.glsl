@@ -71,13 +71,14 @@ float snoise(vec3 v) {
     // Mix final noise value
     vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
     m = m * m;
-    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+    return 64.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
     dot(p2,x2), dot(p3,x3) ) );
 }
 
 void main () {
-    float a = snoise(vec3(v_uv * 1.0, time * 0.1)) * 0.0032;
-    float b = snoise(vec3(v_uv * 1.0, time * 0.1 + 100.0)) * 0.0032;
+    float uTime = time * 1.0;
+    float a = snoise(vec3(v_uv * 1.25, uTime * 0.1)) * 0.0032;
+    float b = snoise(vec3(v_uv * 1.25, uTime * 0.1 + 50.0)) * 0.0032;
     vec4 inputColor = texture2D(sampler, v_uv + vec2(a, b) + mousePos * 0.005);
-    gl_FragColor = vec4(inputColor * 0.995);
+    gl_FragColor = vec4(inputColor * 0.99);
 }
