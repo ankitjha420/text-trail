@@ -1,6 +1,7 @@
 {
-    "name": "disco",
+    "name": "happy-holi",
     "private": true,
+	"homepage": "ankitjha420.github.io/text-trail/",
     "author": "ankit",
     "version": "0.0.0",
     "type": "module",
